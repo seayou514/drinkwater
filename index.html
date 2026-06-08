@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你今天喝水了嗎？</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* 全域手繪塗鴉、粉嫩水感風格 */
+        body {
+            margin: 0; padding: 0; background-color: #f7f9fa;
+            font-family: 'Comic Sans MS', "Microsoft JhengHei", sans-serif;
+            display: flex; justify-content: center; min-height: 100vh; color: #333;
+        }
+
+        /* 模擬手機外框 */
+        .phone-container {
+            width: 100%; max-width: 450px; background-color: #ffffff;
+            min-height: 100vh; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; overflow-x: hidden; padding-bottom: 40px;
+        }
+
+        /* 頂部藍色水波 */
+        .top-waves {
+            width: 100%; height: 50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%237ec2f4" fill-opacity="1" d="M0,96L60,112C120,128,240,160,360,149.3C480,139,600,85,720,80C840,75,960,117,1080,128C1200,139,1320,117,1380,106.7L1440,96L1440,0L1380,0Z"></path></svg>');
+            background-size: cover; position: relative;
+        }
+
+        /* ==================== 1. 登入與註冊介面樣式 ==================== */
+        .login-screen { width: 85%; text-align: center; margin-top: 30px; display: flex; flex-direction: column; }
+        .login-logo { font-size: 50px; color: #29b6f6; margin-bottom: 5px; animation: float 2s ease-in-out infinite; }
+        .login-title { font-size: 30px; font-weight: bold; color: #2979ff; margin-bottom: 5px; }
+        .login-subtitle { font-size: 15px; color: #78909c; margin-bottom: 25px; }
+        
+        .auth-card { display: none; }
+        .auth-card.active { display: block; }
+
+        .input-group { position: relative; margin-bottom: 18px; }
+        .input-group i { position: absolute; left: 15px; top: 14px; color: #7ec2f4; font-size: 18px; }
+        .input-group input {
+            width: 100%; padding: 12px 15px 12px 45px; border: 2px solid #333;
+            border-radius: 16px; font-size: 16px; box-sizing: border-box; outline: none;
+            box-shadow: 2px 3px 0px #333; transition: transform 0.1s;
+        }
+        .input-group input:focus { background-color: #f0faff; }
+        
+        .remember-me-container {
+            display: flex; align-items: center; justify-content: flex-start;
+            margin-bottom: 15px; padding-left: 5px; font-size: 14px; color: #555; cursor: pointer;
+        }
+        .remember-me-container input { margin-right: 8px; width: 16px; height: 16px; cursor: pointer; }
+
+        .primary-btn {
+            width: 100%; padding: 13px; background: #7ec2f4; border: 2px solid #333;
+            border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer;
+            box-shadow: 3px 4px 0px #333; margin-top: 5px; margin-bottom: 12px;
+        }
+        .primary-btn:active { transform: translateY(3px); box-shadow: 0px 1px 0px #333; }
+        
+        .guest-btn {
+            width: 100%; padding: 11px; background: #fffde7; border: 2px solid #333;
+            border-radius: 16px; font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 2px 3px 0px #333; margin-bottom: 15px; color: #f57f17;
+        }
+        .guest-btn:active { transform: translateY(2px); box-shadow: 0px 1px 0px #333; }
+
+        .switch-auth-link { font-size: 14px; color: #2979ff; text-decoration: underline; cursor: pointer; margin-top: 5px; }
+
+        /* ==================== 2. 主畫面介面樣式 ==================== */
+        .main-screen { width: 100%; display: flex; flex-direction: column; align-items: center; flex-grow: 1; }
+        
+        .menu-btn {
+            position: absolute; top: 20px; right: 20px; background: #fff;
+            border: 2px solid #333; border-radius: 50%; width: 42px; height: 42px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 120;
+            box-shadow: 2px 2px 0px #333;
+        }
+
+        .blur-overlay-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 110; display: none; flex-direction: column; justify-content: center; align-items: center; gap: 15px;
+        }
+        .menu-user-info {
+            font-size: 17px; font-weight: bold; color: #0288d1; margin-bottom: 15px;
+            background: white; padding: 12px 25px; border-radius: 30px; border: 2px solid #333; box-shadow: 2px 2px 0px #333;
+            text-align: center;
+        }
+        .menu-item-btn {
+            width: 60%; padding: 12px; background: white; border: 2px solid #333;
+            border-radius: 16px; font-size: 15px; font-weight: bold; cursor: pointer;
+            box-shadow: 3px 3px 0px #333; text-align: center; color: #333;
+        }
+        .menu-item-btn:active { transform: translateY(2px); box-shadow: 1px 1px 0px #333; }
+        .menu-item-btn.logout { background: #ffcdd2; color: #c62828; }
+        .menu-item-btn.update-info { background: #e1f5fe; color: #0288d1; }
+        .menu-item-btn.update-pwd { background: #ede7f6; color: #5e35b1; }
+
+        /* 主畫面元件 */
+        .main-title { font-size: 38px; font-weight: bold; color: #2979ff; text-align: center; margin-top: 40px; margin-bottom: 5px; letter-spacing: 2px; }
+        .sub-title { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 15px; }
+        .water-circle-btn {
+            width: 85px; height: 85px; border: 2px solid #333; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            background-color: #ffffff; box-shadow: 0px 4px 0px #333; margin-bottom: 15px;
+        }
+        .water-circle-btn:active { transform: translateY(4px); box-shadow: 0px 0px 0px #333; }
+        .water-circle-btn i { font-size: 38px; color: #29b6f6; }
+        .progress-text { font-size: 18px; font-weight: 500; color: #555; margin-bottom: 10px; }
+
+        /* 橫向進度條 */
+        .horizontal-progress-bg { width: 75%; height: 18px; background: #e0e0e0; border: 2px solid #333; border-radius: 10px; overflow: hidden; margin-bottom: 25px; }
+        .horizontal-progress-fill { height: 100%; width: 0%; background-color: #29b6f6; transition: width 0.4s ease; }
+
+        /* 植物盆栽 */
+        .plant-container { width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; flex-grow: 1; justify-content: center; }
+        .plant-icon { font-size: 95px; color: #8d6e63; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .pot-icon { font-size: 70px; color: #d84315; margin-top: -15px; }
+        .plant-tip-text { font-size: 13px; color: #666; margin-top: 15px; text-align: center; padding: 0 30px; line-height: 1.4; }
+
+        /* 底部雙按鈕 */
+        .bottom-action-row { display: flex; justify-content: space-between; width: 85%; gap: 20px; margin-top: auto; }
+        .sketch-btn { flex: 1; padding: 13px 10px; font-size: 18px; font-weight: bold; background: #ffffff; border: 2px solid #333; border-radius: 16px; cursor: pointer; box-shadow: 3px 4px 0px #333; text-align: center; }
+        .sketch-btn:active { transform: translateY(3px); box-shadow: 0px 1px 0px #333; }
+
+        /* ==================== 3. 彈出對話框樣式 (Modal) ==================== */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 200; display: none; }
+        .modal-content { background: white; border: 3px solid #333; border-radius: 24px; width: 88%; max-width: 400px; padding: 20px; box-shadow: 6px 6px 0px #333; position: relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 22px; cursor: pointer; color: #aaa; }
+        .close-modal:hover { color: #333; }
+
+        /* 月曆佈局樣式 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #0288d1; }
+        .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; font-size: 12px; color: #78909c; margin-bottom: 5px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day {
+            border: 1px solid #ddd; border-radius: 6px; height: 46px; display: flex; flex-direction: column;
+            justify-content: space-between; align-items: center; padding: 3px; font-size: 11px; background: #fafafa; box-sizing: border-box;
+        }
+        .calendar-day .day-num { font-weight: bold; color: #555; }
+        .calendar-day .day-water { font-size: 9px; color: #0288d1; font-weight: bold; transform: scale(0.9); }
+        .calendar-day.empty { background: transparent; border: none; }
+        .calendar-day.today { border: 2px solid #2979ff; background: #f0faff; }
+        .calendar-day.achieved { background: #e8f5e9; border-color: #a5d6a7; }
+        .calendar-day.achieved .day-water { color: #2e7d32; }
+
+        /* 星期集點卡樣式 */
+        .stamp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 15px; }
+        .stamp-item { border: 2px dashed #b0bec5; border-radius: 14px; height: 75px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 12px; color: #78909c; position: relative; background: #fafafa; }
+        .stamp-item.is-today-box { border-color: #2979ff; background: #f0faff; color: #2979ff; font-weight: bold; }
+        .stamp-item.achieved { border: 2px solid #00c853; background-color: #e8f5e9; color: #00c853; font-weight: bold; }
+        .stamp-item.achieved::after { content: '💧'; position: absolute; font-size: 22px; top: 14px; }
+
+        .modal-input {
+            width: 100%; padding: 12px; border: 2px solid #333; border-radius: 14px;
+            font-size: 15px; box-sizing: border-box; outline: none; box-shadow: 2px 2px 0px #333;
+            margin-top: 10px; margin-bottom: 12px; text-align: center;
+        }
+        .modal-input:disabled { background-color: #eeeeee; cursor: not-allowed; box-shadow: none; border-color: #999; color: #666; }
+        .modal-btn {
+            width: 100%; padding: 12px; background: #b9f6ca; border: 2px solid #333;
+            border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 2px 3px 0px #333; margin-top: 10px;
+        }
+        .modal-btn:active { transform: translateY(2px); box-shadow: 0px 1px 0px #333; }
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <div class="top-waves"></div>
+
+        <div class="login-screen" id="page-login">
+            <div class="login-logo"><i class="fa-solid fa-droplet"></i></div>
+            <div class="login-title">你今天喝水了嗎？</div>
+            <div class="login-subtitle">喝水打卡管理系統</div>
+            
+            <div id="login-error-msg" style="color: #d32f2f; font-size: 14px; margin-bottom: 15px; display: none; font-weight: bold;"></div>
+
+            <div class="auth-card active" id="card-login-form">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="login-username" placeholder="請輸入使用者帳號">
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="請輸入密碼">
+                </div>
+                
+                <label class="remember-me-container">
+                    <input type="checkbox" id="login-remember"> 記住我的帳號密碼
+                </label>
+
+                <button class="primary-btn" onclick="handleLogin()">登入系統</button>
+                <button class="guest-btn" onclick="handleGuestLogin()"><i class="fa-solid fa-wand-magic-sparkles"></i> 遊客試用</button>
+                <br>
+                <span class="switch-auth-link" onclick="switchAuthCard('register')">還沒有帳號？立即註冊新帳戶</span>
+            </div>
+
+            <div class="auth-card" id="card-register-form">
+                <div class="input-group">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <input type="text" id="reg-username" placeholder="設定新帳號名稱">
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-key"></i>
+                    <input type="password" id="reg-password" placeholder="設定登入密碼">
+                </div>
+                <button class="primary-btn" style="background:#b9f6ca;" onclick="handleRegister()">完成註冊並登入</button>
+                <br>
+                <span class="switch-auth-link" onclick="switchAuthCard('login')" style="color:#666;">返回登入畫面</span>
+            </div>
+        </div>
+
+        <div class="main-screen" id="page-main" style="display: none;">
+            
+            <div class="menu-btn" onclick="toggleMenu()">
+                <i class="fa-solid fa-bars" id="menu-icon"></i>
+            </div>
+            
+            <div class="blur-overlay-menu" id="blur-menu">
+                <div class="menu-user-info">
+                    <i class="fa-solid fa-circle-user"></i> 帳號：<span id="menu-username-text">User</span>
+                </div>
+                
+                <div id="menu-buttons-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                </div>
+
+                <button class="menu-item-btn" onclick="handleLogout()"><i class="fa-solid fa-users-viewfinder"></i> 切換帳號</button>
+                <button class="menu-item-btn logout" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> 登出帳號</button>
+                <button class="menu-item-btn" style="background:#f5f5f5;" onclick="toggleMenu()">返回主頁面</button>
+            </div>
+
+            <div class="main-title">你今天喝水了嗎？</div>
+            <div class="sub-title"></div>
+
+            <div class="water-circle-btn" onclick="executeDrink(250)" title="點擊水滴加水 250ml">
+                <i class="fa-solid fa-droplet"></i>
+            </div>
+
+            <div class="progress-text">
+                今日進度 <span id="text-current">0</span> / <span id="text-target">1650</span> ml
+            </div>
+
+            <div class="horizontal-progress-bg">
+                <div class="horizontal-progress-fill" id="bar-fill"></div>
+            </div>
+
+            <div class="plant-container">
+                <i class="fa-solid fa-leaf plant-icon" id="plant-element"></i>
+                <i class="fa-solid fa-border-top-left pot-icon">🏺</i>
+                <p class="plant-tip-text" id="plant-tip">🌱 加油！</p>
+            </div>
+
+            <div class="bottom-action-row">
+                <button class="sketch-btn" onclick="openModal('modal-records')">喝水紀錄</button>
+                <button class="sketch-btn" onclick="openModal('modal-stamps')">打卡進度</button>
+            </div>
+
+            <!-- 提醒控制按鈕 -->
+            <div style="width: 85%; margin-top: 15px; text-align: center;">
+                <button class="sketch-btn" id="reminder-btn" style="background: #e1f5fe; font-size: 15px; width: 100%; color: #0288d1; padding: 10px;" onclick="toggleWaterReminder()">
+                    <i class="fa-solid fa-bell"></i> 開啟 3 小時喝水提醒
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-first-weight" style="z-index: 300;">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color:#2979ff; margin-top:5px;"><i class="fa-solid fa-calculator"></i> 歡迎加入！</h3>
+            <p style="font-size: 14px; color: #555; line-height: 1.4;">請輸入你的體重，系統將為你精準計算專屬的每日目標飲水量（體重 × 30 ml）。</p>
+            <input type="number" id="input-first-weight" class="modal-input" placeholder="請輸入體重 (kg)" min="30" max="200">
+            <button class="modal-btn" onclick="saveFirstWeight()">開啟健康打卡之旅</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-update-weight">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fa-solid fa-xmark close-modal" onclick="closeModal('modal-update-weight')"></i>
+            <h3 style="color:#0288d1; margin-top:5px;"><i class="fa-solid fa-weight-scale"></i> 修改個人體重</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">調整你的體重，系統會同步重新計算每日目標水量：</p>
+            
+            <div style="text-align: left; font-size: 14px; font-weight: bold; color: #555; margin-bottom: 2px;">📍 目前體重 (kg) :</div>
+            <input type="number" id="input-update-weight" class="modal-input" placeholder="請輸入目前體重">
+            
+            <button class="modal-btn" style="background:#e1f5fe; color:#0288d1;" onclick="saveUpdatedWeight()">確認更新體重</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-update-password">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fa-solid fa-xmark close-modal" onclick="closeModal('modal-update-password')"></i>
+            <h3 style="color:#5e35b1; margin-top:5px;"><i class="fa-solid fa-key"></i> 修改帳號密碼</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">安全變更您的登入密碼：</p>
+            
+            <div style="text-align: left; font-size: 14px; font-weight: bold; color: #555; margin-bottom: 2px;">您的舊密碼 :</div>
+            <input type="text" id="input-old-password" class="modal-input" disabled>
+            
+            <div style="text-align: left; font-size: 14px; font-weight: bold; color: #555; margin-bottom: 2px; margin-top: 5px;">輸入新密碼 :</div>
+            <input type="text" id="input-new-password" class="modal-input" placeholder="請輸入欲設定的新密碼">
+            
+            <button class="modal-btn" style="background:#ede7f6; color:#5e35b1;" onclick="saveUpdatedPassword()">確認變更密碼</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-guest-register">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fa-solid fa-xmark close-modal" onclick="closeModal('modal-guest-register')"></i>
+            <h3 style="color:#e65100; margin-top:5px;"><i class="fa-solid fa-user-shield"></i> 升級為正式會員</h3>
+            <p style="font-size: 13px; color: #555; line-height: 1.4;">註冊帳號後，您剛才在遊客模式下累積的喝水進度將會同步移轉。</p>
+            
+            <input type="text" id="guest-reg-username" class="modal-input" placeholder="請設定新帳號名稱">
+            <input type="password" id="guest-reg-password" class="modal-input" placeholder="請設定登入密碼">
+            <input type="number" id="guest-reg-weight" class="modal-input" placeholder="請輸入體重 (kg)" min="30" max="200">
+            
+            <button class="modal-btn" style="background:#fffde7; color:#e65100;" onclick="handleGuestToRegisterSubmit()">完成註冊並導入數據</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-records">
+        <div class="modal-content">
+            <i class="fa-solid fa-xmark close-modal" onclick="closeModal('modal-records')"></i>
+            <h3 style="margin-top:5px; color:#0288d1;"><i class="fa-solid fa-calendar-days"></i> 飲水量健康月曆</h3>
+            
+            <div class="calendar-header">
+                <span id="calendar-month-title">2026 年 6 月</span>
+                <span style="font-size:12px; color:#aaa;">單位: ml</span>
+            </div>
+            
+            <div class="calendar-weekdays">
+                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            
+            <div class="calendar-grid" id="calendar-grid-container">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-stamps">
+        <div class="modal-content">
+            <i class="fa-solid fa-xmark close-modal" onclick="closeModal('modal-stamps')"></i>
+            <h3 style="margin-top:5px; color:#00c853;"><i class="fa-solid fa-calendar-check"></i> 一週七天集點卡</h3>
+            <p style="font-size: 13px; color: #78909c; margin-bottom: 15px;">系統會連動當天星期幾，達標時會自動幫你蓋章：</p>
+            <div class="stamp-grid" id="stamp-grid-container">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let isGuest = false;
+        let waterReminderInterval = null;
+
+        window.onload = function() {
+            // 1. 自動填入帳號密碼 (如果有記住的話)
+            const rememberedUser = localStorage.getItem('remembered_username');
+            const rememberedPass = localStorage.getItem('remembered_password');
+            if (rememberedUser && rememberedPass) {
+                document.getElementById('login-username').value = rememberedUser;
+                document.getElementById('login-password').value = rememberedPass;
+                document.getElementById('login-remember').checked = true;
+            }
+
+            // 2. 強制顯示登入畫面，不執行自動登入請求
+            showLoginScreen();
+        };
+
+        function initSystemTimers() {
+            // 【新增這一行】：頁面載入時先檢查一次
+            checkAndResetDay(); 
+
+            // 每分鐘執行檢查
+            setInterval(() => {
+                checkAndResetDay(); // 檢查是否換日
+                updateUI();         // 更新畫面
+            }, 60000);
+
+            if (localStorage.getItem('water_reminder_enabled_' + currentUser) === 'true') {
+                startWaterReminderTimer();
+            }
+        }
+
+        function toggleWaterReminder() {
+            if (!("Notification" in window)) {
+                alert("很抱歉，您的瀏覽器不支援桌面通知功能。");
+                return;
+            }
+
+            const enabled = localStorage.getItem('water_reminder_enabled_' + currentUser) === 'true';
+
+            if (!enabled) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        localStorage.setItem('water_reminder_enabled_' + currentUser, 'true');
+                        updateReminderButtonUI();
+                        alert("🔔 成功開啟喝水提醒！系統將每隔 3 小時提示您補充水分。");
+                        
+                        new Notification("喝水提醒系統", {
+                            body: "哈囉！您的 3 小時定時喝水提醒已經成功啟動囉！"
+                        });
+                        startWaterReminderTimer();
+                    } else {
+                        alert("您拒絕了通知權限，請手動至瀏覽器設定中開啟。");
+                    }
+                });
+            } else {
+                localStorage.setItem('water_reminder_enabled_' + currentUser, 'false');
+                if (waterReminderInterval) clearInterval(waterReminderInterval);
+                updateReminderButtonUI();
+                alert("🔕 已關閉 3 小時喝水提醒功能。");
+            }
+        }
+
+        function startWaterReminderTimer() {
+            if (waterReminderInterval) clearInterval(waterReminderInterval);
+            const threeHours = 3 * 60 * 60 * 1000;
+            waterReminderInterval = setInterval(() => {
+                if (currentUser && localStorage.getItem('water_reminder_enabled_' + currentUser) === 'true') {
+                    new Notification("💧 該喝水囉！", {
+                        body: `親愛的 ${currentUser}，已經過 3 個小時囉！快去喝杯水吧！`,
+                        requireInteraction: true
+                    });
+                }
+            }, threeHours);
+        }
+
+        function updateReminderButtonUI() {
+            const btn = document.getElementById('reminder-btn');
+            if (!btn) return;
+            const enabled = localStorage.getItem('water_reminder_enabled_' + currentUser) === 'true';
+            if (enabled) {
+                btn.style.background = '#ffcdd2'; btn.style.color = '#c62828';
+                btn.innerHTML = `<i class="fa-solid fa-bell-slash"></i> 關閉 3 小時喝水提醒`;
+            } else {
+                btn.style.background = '#e1f5fe'; btn.style.color = '#0288d1';
+                btn.innerHTML = `<i class="fa-solid fa-bell"></i> 開啟 3 小時喝水提醒`;
+            }
+        }
+
+        function switchAuthCard(target) {
+            document.getElementById('login-error-msg').style.display = "none";
+            if (target === 'register') {
+                document.getElementById('card-login-form').classList.remove('active');
+                document.getElementById('card-register-form').classList.add('active');
+            } else {
+                document.getElementById('card-register-form').classList.remove('active');
+                document.getElementById('card-login-form').classList.add('active');
+            }
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+            const rememberChecked = document.getElementById('login-remember').checked;
+
+            if (user === "" || pass === "") { showError("請輸入帳號和密碼！"); return; }
+
+            fetch('api.php?action=login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (rememberChecked) {
+                        localStorage.setItem('remembered_username', user);
+                        localStorage.setItem('remembered_password', pass);
+                    } else {
+                        localStorage.removeItem('remembered_username');
+                        localStorage.removeItem('remembered_password');
+                    }
+                    currentUser = data.username;
+                    isGuest = false;
+                    sessionStorage.setItem('active_water_user', currentUser);
+                    showMainScreen();
+                    initSystemTimers();
+                } else {
+                    showError(data.message);
+                }
+            });
+        }
+
+        function handleGuestLogin() {
+            currentUser = "匿名遊客";
+            isGuest = true;
+            sessionStorage.setItem('active_water_guest', 'true');
+            localStorage.setItem('water_data_guest', '0'); 
+            showMainScreen();
+            initSystemTimers();
+        }
+
+        function handleRegister() {
+            const user = document.getElementById('reg-username').value.trim();
+            const pass = document.getElementById('reg-password').value.trim();
+
+            if (user === "" || pass === "") { showError("帳號或密碼不能留空！"); return; }
+
+            fetch('api.php?action=register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentUser = user;
+                    isGuest = false;
+                    sessionStorage.setItem('active_water_user', currentUser);
+                    document.getElementById('reg-username').value = "";
+                    document.getElementById('reg-password').value = "";
+                    document.getElementById('page-login').style.display = 'none';
+                    document.getElementById('modal-first-weight').style.display = 'flex';
+                } else {
+                    showError(data.message);
+                }
+            });
+        }
+
+        function saveFirstWeight() {
+            const weightVal = parseInt(document.getElementById('input-first-weight').value);
+            if (!weightVal || weightVal < 30 || weightVal > 200) { alert("請輸入合理的體重喔！"); return; }
+
+            fetch('api.php?action=save_first_weight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weight: weightVal })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('modal-first-weight').style.display = 'none';
+                    showMainScreen();
+                    initSystemTimers();
+                }
+            });
+        }
+
+        function openUpdateWeightModal() {
+            document.getElementById('blur-menu').style.display = 'none';
+            document.getElementById('menu-icon').className = "fa-solid fa-bars";
+            fetch('api.php?action=get_user_data')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('input-update-weight').value = data.weight || "";
+                    document.getElementById('modal-update-weight').style.display = 'flex';
+                });
+        }
+
+        function saveUpdatedWeight() {
+            const weightVal = parseInt(document.getElementById('input-update-weight').value);
+            fetch('api.php?action=save_first_weight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weight: weightVal })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✨ 體重數據更新成功！目標已同步調整。");
+                    document.getElementById('modal-update-weight').style.display = 'none';
+                    updateUI();
+                } else { alert(data.message); }
+            });
+        }
+
+        function openUpdatePasswordModal() {
+            document.getElementById('blur-menu').style.display = 'none';
+            document.getElementById('menu-icon').className = "fa-solid fa-bars";
+    
+            // 嘗試抓取瀏覽器中是否有記住的密碼
+            const savedPass = localStorage.getItem('remembered_password');
+    
+            // 如果有記住，就顯示出來；如果沒有，就顯示空值讓使用者手動輸入
+            if (savedPass) {
+                document.getElementById('input-old-password').value = savedPass;
+            } else {
+                document.getElementById('input-old-password').value = "";
+                document.getElementById('input-old-password').placeholder = "請手動輸入舊密碼";
+            }
+    
+            document.getElementById('input-new-password').value = "";
+            document.getElementById('modal-update-password').style.display = 'flex';
+        }
+
+        function saveUpdatedPassword() {
+            const newPassVal = document.getElementById('input-new-password').value.trim();
+            if (newPassVal === "") { alert("新密碼不可以留空喔！"); return; }
+
+            fetch('api.php?action=update_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_password: newPassVal })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("🔒 帳號密碼已成功變更！");
+                    document.getElementById('modal-update-password').style.display = 'none';
+                } else { alert(data.message); }
+            });
+        }
+
+        function openGuestToRegisterModal() {
+            document.getElementById('blur-menu').style.display = 'none';
+            document.getElementById('menu-icon').className = "fa-solid fa-bars";
+            const currentGuestWater = localStorage.getItem('water_data_guest') || '0';
+            document.getElementById('guest-current-data-text').innerText = " " + currentGuestWater + " ";
+            document.getElementById('modal-guest-register').style.display = 'flex';
+        }
+
+        function handleGuestToRegisterSubmit() {
+            const user = document.getElementById('guest-reg-username').value.trim();
+            const pass = document.getElementById('guest-reg-password').value.trim();
+            const weightVal = parseInt(document.getElementById('guest-reg-weight').value);
+            const guestWaterData = parseInt(localStorage.getItem('water_data_guest')) || 0;
+
+            if (user === "" || pass === "" || !weightVal) { alert("所有欄位均為必填項目！"); return; }
+
+            fetch('api.php?action=register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) { alert(data.message); throw new Error(data.message); }
+                return fetch('api.php?action=save_first_weight', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ weight: weightVal })
+                });
+            })
+            .then(() => {
+                if (guestWaterData > 0) {
+                    return fetch('api.php?action=drink', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: guestWaterData })
+                    });
+                }
+            })
+            .then(() => {
+                localStorage.removeItem('water_data_guest');
+                currentUser = user; isGuest = false;
+                sessionStorage.removeItem('active_water_guest');
+                sessionStorage.setItem('active_water_user', currentUser);
+                document.getElementById('modal-guest-register').style.display = 'none';
+                alert(`🎉 註冊成功！喝水進度已完整導入新帳號 [${user}]！`);
+                showMainScreen();
+                initSystemTimers();
+            }).catch(() => {});
+        }
+
+        function handleLogout() {
+            if (waterReminderInterval) clearInterval(waterReminderInterval);
+            fetch('api.php?action=logout').then(() => {
+                sessionStorage.removeItem('active_water_user');
+                sessionStorage.removeItem('active_water_guest');
+                currentUser = null; isGuest = false;
+                document.getElementById('blur-menu').style.display = 'none';
+                document.getElementById('menu-icon').className = "fa-solid fa-bars";
+                switchAuthCard('login');
+                showLoginScreen();
+            });
+        }
+
+        function showLoginScreen() {
+            document.getElementById('page-login').style.display = 'flex';
+            document.getElementById('page-main').style.display = 'none';
+        }
+
+        function showMainScreen() {
+            document.getElementById('page-login').style.display = 'none';
+            document.getElementById('page-main').style.display = 'flex';
+            document.getElementById('menu-username-text').innerText = currentUser;
+            
+            const buttonsContainer = document.getElementById('menu-buttons-container');
+            if (isGuest) {
+                buttonsContainer.innerHTML = `
+                    <button class="menu-item-btn update-info" style="background:#fffde7; color:#e65100; border-color:#f57f17;" onclick="openGuestToRegisterModal()">
+                        <i class="fa-solid fa-user-shield"></i> 升級為正式帳號
+                    </button>`;
+            } else {
+                buttonsContainer.innerHTML = `
+                    <button class="menu-item-btn update-info" onclick="openUpdateWeightModal()">
+                        <i class="fa-solid fa-weight-scale"></i> 修改個人體重
+                    </button>
+                    <button class="menu-item-btn update-pwd" onclick="openUpdatePasswordModal()">
+                        <i class="fa-solid fa-key"></i> 修改帳號密碼
+                    </button>`;
+            }
+            updateUI();
+            updateReminderButtonUI();
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('blur-menu');
+            const icon = document.getElementById('menu-icon');
+            if (menu.style.display === 'flex') {
+                menu.style.display = 'none'; icon.className = "fa-solid fa-bars";
+            } else {
+                menu.style.display = 'flex'; icon.className = "fa-solid fa-xmark";
+            }
+        }
+
+        function executeDrink(amount) {
+            if (isGuest) {
+                let currentAmount = parseInt(localStorage.getItem('water_data_guest')) || 0;
+                currentAmount += amount;
+                localStorage.setItem('water_data_guest', currentAmount);
+                updateUI();
+            } else {
+                fetch('api.php?action=drink', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amount })
+                })
+                .then(res => res.json())
+                .then(data => { if (data.success) updateUI(); });
+            }
+        }
+
+        function updateUI() {
+            if (isGuest) {
+                const currentAmount = parseInt(localStorage.getItem('water_data_guest')) || 0;
+                renderDOM(currentAmount, 1500, {}, {});
+            } else {
+                fetch('api.php?action=get_user_data')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // 【關鍵防呆】：如果 data.monthHistory 或 weeklyStamps 是空的，給予預設空物件
+                            renderDOM(
+                                data.currentAmount || 0, 
+                                data.targetWater || 1650, 
+                                data.monthHistory || {}, 
+                                data.weeklyStamps || {}
+                            );
+                        }
+                    })
+                    .catch(err => console.log("載入資料失敗"));
+            }
+        }
+
+        function renderDOM(currentAmount, targetWater, monthHistory, weeklyStamps) {
+            document.getElementById('text-current').innerText = currentAmount;
+            document.getElementById('text-target').innerText = targetWater;
+
+            let percentage = (currentAmount / targetWater) * 100;
+            if (percentage > 100) percentage = 100;
+            document.getElementById('bar-fill').style.width = percentage + '%';
+
+            const plant = document.getElementById('plant-element');
+            const tip = document.getElementById('plant-tip');
+
+            if (currentAmount >= targetWater) {
+                plant.className = "fa-solid fa-snowflake plant-icon"; plant.style.color = "#00c853"; plant.style.transform = "scale(1.25)";
+                tip.innerHTML = "🎉 太棒了！今日喝水目標已完美達成！小盆栽成功開花了！";
+            } else if (currentAmount >= (targetWater * 0.6)) {
+                plant.className = "fa-solid fa-seedling plant-icon"; plant.style.color = "#81c784"; plant.style.transform = "scale(1.15)";
+                tip.innerHTML = "🌿 小盆栽吸飽了水分，正努力挺直長大！再加把勁目標就到囉！";
+            } else if (currentAmount >= (targetWater * 0.3)) {
+                plant.className = "fa-solid fa-seedling plant-icon"; plant.style.color = "#afb42b"; plant.style.transform = "scale(1.0)";
+                tip.innerHTML = "🌱 小種子探出頭發芽囉！多喝水對身體很好，記得定時灌溉牠！";
+            } else {
+                plant.className = "fa-solid fa-leaf plant-icon"; plant.style.color = "#8d6e63"; plant.style.transform = "scale(0.9)";
+                tip.innerHTML = "🍂 小盆栽目前處於缺水狀態... 快點擊上方的「圓形水滴按鈕」餵牠喝水吧！";
+            }
+
+            renderCalendarAndStampsDOM(currentAmount, targetWater, monthHistory, weeklyStamps);
+        }
+
+        function renderCalendarAndStampsDOM(currentAmount, targetWater, monthHistory, weeklyStamps) {
+            const now = new Date();
+            const todayDate = now.getDate(); 
+            const todayDayOfWeek = now.getDay(); 
+
+            // A. 月曆渲染
+            const calendarGrid = document.getElementById('calendar-grid-container');
+            const calendarTitle = document.getElementById('calendar-month-title');
+            calendarTitle.innerText = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月`;
+
+            const firstDayIndex = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+            const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+            let calendarHTML = '';
+            for (let i = 0; i < firstDayIndex; i++) { calendarHTML += `<div class="calendar-day empty"></div>`; }
+
+            for (let day = 1; day <= totalDaysInMonth; day++) {
+                let dayWater = isGuest ? (day === todayDate ? currentAmount : 0) : (monthHistory[day] || 0);
+                let dayClass = 'calendar-day';
+
+                if (day === todayDate) dayClass += ' today';
+                if (dayWater >= targetWater) dayClass += ' achieved';
+
+                calendarHTML += `
+                    <div class="${dayClass}">
+                        <span class="day-num">${day}</span>
+                        <span class="day-water">${dayWater}</span>
+                    </div>`;
+            }
+            calendarGrid.innerHTML = calendarHTML;
+
+            // B. 一週七天集點渲染
+            const stampGrid = document.getElementById('stamp-grid-container');
+            const weekdaysName = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+            const displayOrder = [1, 2, 3, 4, 5, 6, 0]; 
+            let stampHTML = '';
+
+            displayOrder.forEach(weekIndex => {
+                let isToday = (todayDayOfWeek === weekIndex);
+                let boxClass = 'stamp-item';
+                
+                if (isToday) {
+                    boxClass += ' is-today-box';
+                    if (currentAmount >= targetWater) boxClass += ' achieved';
+                } else if (!isGuest && weeklyStamps[weekIndex]) {
+                    boxClass += ' achieved';
+                }
+
+                stampHTML += `<div class="${boxClass}"><br><br>${weekdaysName[weekIndex]}</div>`;
+            });
+            stampHTML += `<div class="stamp-item" style="background: #eeeeee; border: none; color: #b0bec5;"><br><br>滿!</div>`;
+            stampGrid.innerHTML = stampHTML;
+        }
+
+        function showError(text) {
+            const errorEl = document.getElementById('login-error-msg');
+            errorEl.innerText = text; errorEl.style.display = "block";
+        }
+
+        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+        window.onclick = function(event) {
+            if (event.target.className === 'modal-overlay') { event.target.style.display = 'none'; }
+        }
+
+        // 修改後的每日重置函式
+        async function checkAndResetDay() {
+            const today = new Date().toDateString();
+            const lastCheck = localStorage.getItem('last_check_date');
+
+            if (lastCheck !== today) {
+                console.log("偵測到跨日，開始重置...");
+        
+                if (isGuest) {
+                    localStorage.setItem('water_data_guest', '0');
+                    localStorage.setItem('last_check_date', today);
+                    updateUI();
+                } else {
+                    // 使用 await 等待伺服器刪除資料完畢
+                    try {
+                        await fetch('api.php?action=reset_daily');
+                        localStorage.setItem('last_check_date', today);
+                        // 確定刪除完畢後，才執行更新介面
+                        updateUI(); 
+                    } catch (e) {
+                        console.error("重置失敗:", e);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
